@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claims Frontend Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #3b82f6;
+            background-color: #f8fafc;
+        }
+        .code {
+            background-color: #f1f5f9;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .button {
+            background-color: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background-color: #2563eb;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background-color: #d1fae5; color: #065f46; }
+        .error { background-color: #fee2e2; color: #991b1b; }
+        .info { background-color: #dbeafe; color: #1e40af; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Claims Frontend Test Page</h1>
+            <p>Test the React frontend application for submitting insurance claims</p>
+        </div>
+
+        <div class="step">
+            <h3>1. Start the Backend Server</h3>
+            <p>First, make sure the Veramo backend server is running:</p>
+            <div class="code">
+                cd veramo-server<br>
+                npm start
+            </div>
+            <button class="button" onclick="testBackend()">Test Backend Connection</button>
+            <div id="backend-status"></div>
+        </div>
+
+        <div class="step">
+            <h3>2. Start the Frontend Development Server</h3>
+            <p>In a new terminal, start the React frontend:</p>
+            <div class="code">
+                cd claims-frontend<br>
+                npm run dev
+            </div>
+            <p>The application will be available at <strong>http://localhost:3001</strong></p>
+        </div>
+
+        <div class="step">
+            <h3>3. Test the Application</h3>
+            <p>Follow these steps to test the claim submission:</p>
+            <ol>
+                <li>Open <a href="http://localhost:3001" target="_blank">http://localhost:3001</a></li>
+                <li>Connect your MetaMask wallet</li>
+                <li>Switch to Hardhat local network (Chain ID: 1337)</li>
+                <li>Fill out the claim form with test data</li>
+                <li>Submit the claim and watch the progress</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>4. Test Data</h3>
+            <p>Use this sample data for testing:</p>
+            <div class="code">
+                Patient DID: did:ethr:0x1234567890123456789012345678901234567890<br>
+                Insurance VC: {"@context":["https://www.w3.org/2018/credentials/v1"],"type":["VerifiableCredential","InsuranceCredential"],"credentialSubject":{"id":"did:ethr:0x1234567890123456789012345678901234567890","policyNumber":"POL123456","coverage":"Comprehensive","validity":"2024-12-31"},"issuanceDate":"2024-01-01T00:00:00.000Z"}<br>
+                Claim Amount: 0.1 ETH<br>
+                File: Any PDF document
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>5. Expected Flow</h3>
+            <p>The application should:</p>
+            <ul>
+                <li>✅ Verify the insurance credential with the backend</li>
+                <li>✅ Upload the PDF file and compute SHA-256 hash</li>
+                <li>✅ Submit the claim to the smart contract via MetaMask</li>
+                <li>✅ Display success message with transaction details</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>6. Troubleshooting</h3>
+            <p>If you encounter issues:</p>
+            <ul>
+                <li>Check browser console for error messages</li>
+                <li>Ensure MetaMask is connected and on correct network</li>
+                <li>Verify backend server is running and accessible</li>
+                <li>Check that the Claims contract is deployed</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        async function testBackend() {
+            const statusDiv = document.getElementById('backend-status');
+            statusDiv.innerHTML = '<div class="status info">Testing backend connection...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                const data = await response.json();
+                
+                if (data.status === 'OK') {
+                    statusDiv.innerHTML = '<div class="status success">✅ Backend is running and healthy!</div>';
+                } else {
+                    statusDiv.innerHTML = '<div class="status error">❌ Backend responded but status is not OK</div>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="status error">❌ Backend is not running or not accessible. Please start the backend server first.</div>';
+            }
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,26 @@
+{
+  "name": "claims-contract",
+  "version": "1.0.0",
+  "description": "Ethereum smart contract for managing insurance claims",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.js",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
+    "example": "hardhat run scripts/example.js",
+    "node": "hardhat node",
+    "clean": "hardhat clean"
+  },
+  "keywords": ["ethereum", "smart-contracts", "hardhat", "insurance", "claims"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.19.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.0"
+  }
+}
