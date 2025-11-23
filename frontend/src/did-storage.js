@@ -9,34 +9,36 @@ const STORAGE_KEY_PREFIX = 'mpa_did_';
  * @param {string} did - The DID to store
  */
 export function storeDID(walletAddress, role, did) {
-  if (!walletAddress || !role || !did) {
-    console.warn('Cannot store DID: missing walletAddress, role, or did');
+  if (!walletAddress || !did) {
+    console.warn('Cannot store DID: missing walletAddress or did');
     return;
   }
-  const key = `${STORAGE_KEY_PREFIX}${role}_${walletAddress.toLowerCase()}`;
+  // Unified key - ignores role to share identity across all dashboards
+  const key = `${STORAGE_KEY_PREFIX}${walletAddress.toLowerCase()}`;
   try {
     localStorage.setItem(key, did);
-    console.log(`✅ Stored DID for ${role} at ${walletAddress}`);
+    console.log(`✅ Stored unified DID for ${walletAddress}`);
   } catch (error) {
     console.error('Error storing DID:', error);
   }
 }
 
 /**
- * Retrieve DID for a wallet address and role
+ * Retrieve DID for a wallet address (unified across roles)
  * @param {string} walletAddress - The wallet address
- * @param {string} role - The role (patient, insurer, provider)
+ * @param {string} role - The role (ignored for unified identity)
  * @returns {string|null} The stored DID or null if not found
  */
 export function getDID(walletAddress, role) {
-  if (!walletAddress || !role) {
+  if (!walletAddress) {
     return null;
   }
-  const key = `${STORAGE_KEY_PREFIX}${role}_${walletAddress.toLowerCase()}`;
+  // Unified key - ignores role
+  const key = `${STORAGE_KEY_PREFIX}${walletAddress.toLowerCase()}`;
   try {
     const did = localStorage.getItem(key);
     if (did) {
-      console.log(`✅ Retrieved DID for ${role} at ${walletAddress}`);
+      console.log(`✅ Retrieved unified DID for ${walletAddress}`);
     }
     return did;
   } catch (error) {
@@ -46,18 +48,19 @@ export function getDID(walletAddress, role) {
 }
 
 /**
- * Remove DID for a wallet address and role
+ * Remove DID for a wallet address (unified across roles)
  * @param {string} walletAddress - The wallet address
- * @param {string} role - The role (patient, insurer, provider)
+ * @param {string} role - The role (ignored for unified identity)
  */
 export function removeDID(walletAddress, role) {
-  if (!walletAddress || !role) {
+  if (!walletAddress) {
     return;
   }
-  const key = `${STORAGE_KEY_PREFIX}${role}_${walletAddress.toLowerCase()}`;
+  // Unified key - ignores role
+  const key = `${STORAGE_KEY_PREFIX}${walletAddress.toLowerCase()}`;
   try {
     localStorage.removeItem(key);
-    console.log(`✅ Removed DID for ${role} at ${walletAddress}`);
+    console.log(`✅ Removed unified DID for ${walletAddress}`);
   } catch (error) {
     console.error('Error removing DID:', error);
   }

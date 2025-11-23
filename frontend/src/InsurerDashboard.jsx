@@ -24,6 +24,8 @@ function InsurerDashboard() {
   const [vcInfo, setVcInfo] = useState(null);
   const [vcQr, setVcQr] = useState('');
   const [issuedVCs, setIssuedVCs] = useState([]);
+  const [viewVcModalOpen, setViewVcModalOpen] = useState(false);
+  const [viewVcData, setViewVcData] = useState(null);
 
   // Filter and sort state
   const [statusFilter, setStatusFilter] = useState('all');
@@ -147,13 +149,30 @@ function InsurerDashboard() {
       // For now, we'll get VCs from policy requests that are approved
       // In a real implementation, you'd have a dedicated endpoint
       const approvedRequests = requests.filter(req => (req.status || 'pending') === 'approved');
-      // Map to VC format (this is a placeholder - in real app, fetch from VC store)
-      setIssuedVCs(approvedRequests.map(req => ({
+
+      // We need to fetch the actual VC data for these requests
+      // This is a mock implementation since we don't have a direct "get VC by request ID" easily available in this view
+      // In a real app, you'd fetch this from the backend
+      const vcs = approvedRequests.map(req => ({
         id: req.id,
         patientDid: req.patientDid,
         policyId: req.id,
         issuedAt: req.createdAt,
-      })));
+        // Mock VC data structure for view/download if real data isn't available
+        vc: {
+          '@context': ['https://www.w3.org/2018/credentials/v1'],
+          type: ['VerifiableCredential', 'InsurancePolicy'],
+          issuer: { id: insurerDid || 'did:example:insurer' },
+          issuanceDate: req.createdAt || new Date().toISOString(),
+          credentialSubject: {
+            id: req.patientDid,
+            policyId: req.id,
+            coverageAmount: req.coverageAmount,
+            ...req.details
+          }
+        }
+      }));
+      setIssuedVCs(vcs);
     } catch (error) {
       console.log('Error loading issued VCs:', error);
     }
@@ -180,7 +199,7 @@ function InsurerDashboard() {
       const policyNumber = `POLICY-${Date.now().toString().slice(-5)}`;
       const validTill = new Date();
       validTill.setFullYear(validTill.getFullYear() + 1);
-      
+
       const patientDid = data.patientDid || `did:example:${data.patientWallet}`;
       const payload = {
         issuerDid: insurerDid,
@@ -230,7 +249,7 @@ function InsurerDashboard() {
     try {
       const response = await fetch(`http://localhost:3001/verification/did?did=${encodeURIComponent(did)}`);
       const result = await response.json();
-      
+
       if (result.verified) {
         showToast('✔ DID Verified', 'success');
       } else {
@@ -271,6 +290,28 @@ function InsurerDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleViewVC = (vc) => {
+    // If vc is wrapped in an object with 'vc' property, use that
+    const vcData = vc.vc || vc;
+    setViewVcData(vcData);
+    setViewVcModalOpen(true);
+  };
+
+  const handleDownloadVC = (vc) => {
+    const vcData = vc.vc || vc;
+    const dataStr = JSON.stringify(vcData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `vc-${vcData.id || Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('VC downloaded successfully', 'success');
   };
 
 
@@ -361,7 +402,7 @@ function InsurerDashboard() {
         <div className="space-y-4">
           {!wallet?.account ? (
             <div className="space-y-4">
-              <button 
+              <button
                 className="btn btn-primary w-full sm:w-auto flex items-center justify-center space-x-2"
                 onClick={async () => {
                   // Trigger wallet connection
@@ -395,7 +436,7 @@ function InsurerDashboard() {
                 </div>
                 <p className="text-sm text-gray-600 font-mono break-all">{wallet.account}</p>
               </div>
-              <button 
+              <button
                 className="btn btn-secondary w-full sm:w-auto"
                 onClick={() => setWallet(null)}
               >
@@ -590,8 +631,21 @@ function InsurerDashboard() {
                     <>
                       <button
                         onClick={() => {
-                          // View VC functionality
-                          showToast('VC viewing feature coming soon', 'success');
+                          // Fetch VC logic here or use mock if not available immediately
+                          // For now, we construct a basic VC object from the request
+                          const mockVC = {
+                            '@context': ['https://www.w3.org/2018/credentials/v1'],
+                            type: ['VerifiableCredential', 'InsurancePolicy'],
+                            issuer: insurerDid || 'did:example:insurer',
+                            issuanceDate: request.createdAt,
+                            credentialSubject: {
+                              id: request.patientDid,
+                              policyId: request.id,
+                              coverageAmount: request.coverageAmount,
+                              ...request.details
+                            }
+                          };
+                          handleViewVC(mockVC);
                         }}
                         className="px-4 py-2 text-sm font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
                       >
@@ -599,8 +653,19 @@ function InsurerDashboard() {
                       </button>
                       <button
                         onClick={() => {
-                          // Download VC functionality
-                          showToast('VC download feature coming soon', 'success');
+                          const mockVC = {
+                            '@context': ['https://www.w3.org/2018/credentials/v1'],
+                            type: ['VerifiableCredential', 'InsurancePolicy'],
+                            issuer: insurerDid || 'did:example:insurer',
+                            issuanceDate: request.createdAt,
+                            credentialSubject: {
+                              id: request.patientDid,
+                              policyId: request.id,
+                              coverageAmount: request.coverageAmount,
+                              ...request.details
+                            }
+                          };
+                          handleDownloadVC(mockVC);
                         }}
                         className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                       >
@@ -628,11 +693,10 @@ function InsurerDashboard() {
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  currentPage === page
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${currentPage === page
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
               >
                 {page}
               </button>
@@ -652,12 +716,8 @@ function InsurerDashboard() {
       <CollapsibleCard title="Issued VCs" defaultOpen={false} icon="📜">
         <IssuedVCList
           vcs={issuedVCs}
-          onViewVC={(vc) => {
-            showToast('VC viewing feature coming soon', 'success');
-          }}
-          onDownloadVC={(vc) => {
-            showToast('VC download feature coming soon', 'success');
-          }}
+          onViewVC={handleViewVC}
+          onDownloadVC={handleDownloadVC}
         />
       </CollapsibleCard>
 
@@ -681,6 +741,44 @@ function InsurerDashboard() {
         onConfirm={handleIssueVC}
         loading={loading}
       />
+
+      {/* View VC Modal */}
+      {viewVcModalOpen && viewVcData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 shadow-xl max-h-[90vh] overflow-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800">Verifiable Credential</h3>
+              <button
+                onClick={() => setViewVcModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4 overflow-auto max-h-96">
+              <pre className="text-xs font-mono text-gray-700 whitespace-pre-wrap">
+                {JSON.stringify(viewVcData, null, 2)}
+              </pre>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => handleDownloadVC(viewVcData)}
+                className="btn btn-primary"
+              >
+                Download JSON
+              </button>
+              <button
+                onClick={() => setViewVcModalOpen(false)}
+                className="btn btn-secondary"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

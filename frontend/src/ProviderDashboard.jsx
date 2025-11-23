@@ -3,6 +3,7 @@ import { createDID, issueCredential, uploadFile, onchainSubmitClaim, getIssuedVC
 import ConnectWallet from './ConnectWallet';
 import CollapsibleCard from './components/CollapsibleCard';
 import QRCode from 'qrcode';
+import { storeDID, getDID } from './did-storage';
 
 function ProviderDashboard() {
   const [wallet, setWallet] = useState(null);
@@ -39,6 +40,19 @@ function ProviderDashboard() {
   // Claims Submitted state
   const [submittedClaims, setSubmittedClaims] = useState([]);
 
+  // Auto-retrieve DID when wallet connects
+  useEffect(() => {
+    if (wallet?.account && !did) {
+      const storedDID = getDID(wallet.account, 'provider');
+      if (storedDID) {
+        setDid(storedDID);
+        setMessage({ type: 'success', text: 'Provider DID automatically retrieved for this wallet!' });
+      }
+    } else if (!wallet?.account) {
+      setDid(null);
+    }
+  }, [wallet?.account]);
+
   const handleCreateDID = async () => {
     setLoading(true);
     setMessage(null);
@@ -46,6 +60,7 @@ function ProviderDashboard() {
       const result = await createDID();
       if (result.success) {
         setDid(result.did);
+        storeDID(wallet.account, 'provider', result.did);
         setMessage({ type: 'success', text: 'Provider DID created successfully!' });
       } else {
         setMessage({ type: 'error', text: result.error || 'Failed to create DID' });
@@ -200,19 +215,19 @@ function ProviderDashboard() {
     setMessage(null);
     try {
       // Convert ETH to wei if needed
-      const amountInWei = claimForm.amount.includes('.') 
+      const amountInWei = claimForm.amount.includes('.')
         ? (parseFloat(claimForm.amount) * 1e18).toString()
         : claimForm.amount;
 
       const fileCidsArray = claimForm.fileCids ? claimForm.fileCids.split(',').map(c => c.trim()) : [];
-      
+
       // Use treatment VC CID if available, otherwise use first file CID or empty
       const vcCid = issuedTreatmentVC?.cid || fileCidsArray[0] || '';
 
       const result = await onchainSubmitClaim({
         policyId: claimForm.policyId,
-        beneficiary: claimForm.patientWalletOrDid.startsWith('0x') 
-          ? claimForm.patientWalletOrDid 
+        beneficiary: claimForm.patientWalletOrDid.startsWith('0x')
+          ? claimForm.patientWalletOrDid
           : wallet.account, // Use wallet if DID provided
         insurer: '', // Will be determined from policy
         ipfsHash: fileCidsArray[0] || '',
@@ -221,9 +236,9 @@ function ProviderDashboard() {
       });
 
       if (result.success) {
-        setMessage({ 
-          type: 'success', 
-          text: `Claim submitted successfully! Claim ID: ${result.claimId}` 
+        setMessage({
+          type: 'success',
+          text: `Claim submitted successfully! Claim ID: ${result.claimId}`
         });
         // Reset form
         setClaimForm({
@@ -250,7 +265,7 @@ function ProviderDashboard() {
       const result = await getIssuedVCs();
       if (result.success && result.vcs) {
         // Filter VCs issued by this provider
-        const providerVCs = result.vcs.filter(vc => 
+        const providerVCs = result.vcs.filter(vc =>
           vc.vc?.issuer?.id === did || vc.issuerDid === did
         );
         setIssuedVCs(providerVCs);
@@ -626,12 +641,11 @@ function ProviderDashboard() {
                       <td className="border border-gray-300 px-4 py-2 font-mono text-xs break-all">{claim.beneficiary || claim.patientDid || 'N/A'}</td>
                       <td className="border border-gray-300 px-4 py-2 text-sm">{claim.amount || 'N/A'}</td>
                       <td className="border border-gray-300 px-4 py-2">
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          claim.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                          claim.status === 'Rejected' ? 'bg-red-100 text-red-800' :
-                          claim.status === 'Paid' ? 'bg-blue-100 text-blue-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        <span className={`px-2 py-1 rounded text-xs ${claim.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                            claim.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                              claim.status === 'Paid' ? 'bg-blue-100 text-blue-800' :
+                                'bg-yellow-100 text-yellow-800'
+                          }`}>
                           {claim.status || 'Submitted'}
                         </span>
                       </td>
